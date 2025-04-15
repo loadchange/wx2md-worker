@@ -7,6 +7,7 @@
  * 使用方法:
  * 原微信文章: https://mp.weixin.qq.com/s/MhzcF7u_p3UHZ9qR6hptww
  * 转换后访问: https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww
+ * HTML格式访问: https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww.html
  */
 
 /**
@@ -58,7 +59,14 @@ export default {
 			}
 
 			// 从路径中提取文章 ID
-			const articleId = path.substring(3); // 去掉 '/s/' 前缀
+			let articleId = path.substring(3); // 去掉 '/s/' 前缀
+			let isHtmlMode = false;
+
+			// 检测是否是HTML模式
+			if (articleId.endsWith('.html')) {
+				isHtmlMode = true;
+				articleId = articleId.slice(0, -5); // 移除 .html 后缀
+			}
 
 			if (!articleId) {
 				return new Response('请提供微信公众号文章 ID', {
@@ -106,6 +114,16 @@ export default {
 
 			// 获取转换后的 Markdown 内容
 			const markdownContent = mdResult[0].data;
+
+			// 检查是否是HTML模式
+			if (isHtmlMode) {
+				// 返回HTML包装的Markdown内容
+				const htmlResponse = generateHtmlWrapper(title, markdownContent);
+				return new Response(htmlResponse, {
+					status: 200,
+					headers: { 'Content-Type': 'text/html; charset=utf-8' },
+				});
+			}
 
 			// 检查是否请求下载文件
 			const download = url.searchParams.get('download') === 'true';
@@ -196,6 +214,55 @@ function getArticleTitle(html: string, fallbackId: string): string {
 }
 
 /**
+ * 生成HTML包装的Markdown内容
+ */
+function generateHtmlWrapper(title: string, markdownContent: string): string {
+	return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    pre {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-x: auto;
+      font-family: monospace;
+      border: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+  <pre>${escapeHtml(markdownContent)}</pre>
+</body>
+</html>`;
+}
+
+/**
+ * HTML内容转义
+ */
+function escapeHtml(unsafe: string): string {
+	return unsafe
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
+}
+
+/**
  * 生成简单的主页 HTML
  */
 function generateHomePage(): string {
@@ -246,7 +313,7 @@ function generateHomePage(): string {
 </head>
 <body>
   <h1>微信公众号文章转 Markdown 工具</h1>
-
+  <a href="https://github.com/loadchange/wx2md-worker" target="_blank" style="font-size: 20px;font-weight: bold;color: #d71c1c;">Github</a>
   <p>
     这是一个将微信公众号文章转换为 Markdown 格式的工具，可解决以下问题：
   </p>
@@ -270,6 +337,7 @@ function generateHomePage(): string {
   <h2>参数说明</h2>
   <ul>
     <li><code>?download=true</code> - 添加此参数将触发文件下载，而不是在浏览器中显示</li>
+    <li>在URL后添加<code>.html</code> - 以HTML格式查看Markdown内容</li>
   </ul>
 
   <h2>示例</h2>
@@ -277,6 +345,10 @@ function generateHomePage(): string {
     <li>
       <p>在浏览器中查看转换后的 Markdown:</p>
       <code>https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww</code>
+    </li>
+    <li>
+      <p>以HTML格式查看Markdown内容:</p>
+      <code>https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww.html</code>
     </li>
     <li>
       <p>直接下载 Markdown 文件:</p>
