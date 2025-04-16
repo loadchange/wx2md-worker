@@ -29,9 +29,13 @@ Playground: [https://mp.084817.xyz](https://mp.084817.xyz/)
 
 3. 支持以下功能：
    - `?download=true` 直接下载 Markdown 文件
-   - `.html` 后缀模式：在链接末尾添加 `.html` 将以 HTML 页面形式展示 Markdown 内容
+   - HTML 格式查看 (推荐格式)：使用 `/html/s/` 路径
 
-   例如：`https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww.html`
+     例如：`https://wx2md-worker.[:username].workers.dev/html/s/MhzcF7u_p3UHZ9qR6hptww`
+
+   - HTML 格式查看 (兼容格式)：在链接末尾添加 `.html`
+
+     例如：`https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww.html`
 
 4. 也可访问 `/` 查看主页说明，或 `/health` 检查服务健康状态。
 
