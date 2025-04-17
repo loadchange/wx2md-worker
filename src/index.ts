@@ -12,6 +12,9 @@
  * HTML格式通用网页: https://wx2md-worker.[:username].workers.dev/html/md?url=https%3A%2F%2Fexample.com
  */
 
+// 引入首页HTML内容文件
+import INDEX_HTML from '../index.html';
+
 /**
  * 微信公众号文章 URL 前缀
  */
@@ -175,23 +178,25 @@ export default {
 
 			// 处理主页请求
 			if (path === '/' || path === '') {
-				return new Response(generateHomePage(), {
+				// 读取项目根目录下的index.html文件
+				const indexHtml = INDEX_HTML;
+				return new Response(indexHtml, {
 					status: 200,
 					headers: { 'Content-Type': 'text/html; charset=utf-8' },
-					});
-				}
+				});
+			}
 
-				// 处理HTML格式通用网页请求 (/html/md)
-				if (path === '/html/md') {
-					return await handleGenericWebpage(url, env, true);
-				}
+			// 处理HTML格式通用网页请求 (/html/md)
+			if (path === '/html/md') {
+				return await handleGenericWebpage(url, env, true);
+			}
 
-				// 处理通用网页URL转Markdown请求 (/md)
-				if (path === '/md') {
-					// 检查是否明确请求HTML格式
-					const isHtmlMode = url.searchParams.get('format') === 'html';
-					return await handleGenericWebpage(url, env, isHtmlMode);
-				}
+			// 处理通用网页URL转Markdown请求 (/md)
+			if (path === '/md') {
+				// 检查是否明确请求HTML格式
+				const isHtmlMode = url.searchParams.get('format') === 'html';
+				return await handleGenericWebpage(url, env, isHtmlMode);
+			}
 
 			// 检查是否是新的HTML格式路径: /html/s/{article_id}
 			let isHtmlMode = false;
@@ -364,155 +369,4 @@ function escapeHtml(unsafe: string): string {
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#039;');
-}
-
-/**
- * 生成简单的主页 HTML
- */
-function generateHomePage(): string {
-	return `<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>网页内容转 Markdown 工具</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    h1 {
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
-    code {
-      background-color: #f5f5f5;
-      padding: 2px 4px;
-      border-radius: 3px;
-      font-family: monospace;
-    }
-    .example {
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-radius: 5px;
-      margin: 20px 0;
-    }
-    .footer {
-      margin-top: 40px;
-      font-size: 0.9em;
-      color: #666;
-      border-top: 1px solid #eee;
-      padding-top: 10px;
-    }
-    .highlight {
-      font-weight: bold;
-      color: #0066cc;
-    }
-    .section {
-      margin-top: 30px;
-      border-top: 1px solid #eee;
-      padding-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <h1>网页内容转 Markdown 工具</h1>
-  <a href="https://github.com/loadchange/wx2md-worker" target="_blank" style="font-size: 20px;font-weight: bold;color: #d71c1c;">Github</a>
-
-  <div class="section">
-    <h2>微信公众号文章转换</h2>
-    <p>
-      这个工具可以将微信公众号文章转换为 Markdown 格式，解决以下问题：
-    </p>
-    <ul>
-      <li>绕过微信对某些 IP 的访问限制</li>
-      <li>将公众号内容转换为结构化的 Markdown，提高可读性</li>
-      <li>便于将内容导入到 AI 模型、知识库或笔记系统</li>
-    </ul>
-
-    <h3>使用方法</h3>
-    <p>只需将微信公众号文章链接中的参数部分添加到本工具的 URL 后即可。</p>
-
-    <div class="example">
-      <p><strong>原微信文章:</strong></p>
-      <code>https://mp.weixin.qq.com/s/MhzcF7u_p3UHZ9qR6hptww</code>
-
-      <p><strong>转换后访问:</strong></p>
-      <code>https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww</code>
-    </div>
-
-    <h3>示例</h3>
-    <ul>
-      <li>
-        <p>在浏览器中查看转换后的 Markdown:</p>
-        <code>https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww</code>
-      </li>
-      <li>
-        <p>以HTML格式查看Markdown内容:</p>
-        <code>https://wx2md-worker.[:username].workers.dev/html/s/MhzcF7u_p3UHZ9qR6hptww</code>
-      </li>
-      <li>
-        <p>直接下载 Markdown 文件:</p>
-        <code>https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww?download=true</code>
-      </li>
-    </ul>
-  </div>
-
-  <div class="section">
-    <h2>通用网页转换</h2>
-    <p>
-      新功能！本工具现在支持转换<strong>任何网页</strong>为 Markdown 格式，不再仅限于微信公众号文章。
-    </p>
-
-    <h3>使用方法</h3>
-    <p>使用 <code>/md</code> 路径并通过 <code>url</code> 参数提供要转换的完整网页地址：</p>
-
-    <div class="example">
-      <p><strong>原网页:</strong></p>
-      <code>https://www.cls.cn/detail/2003789</code>
-
-      <p><strong>转换后访问:</strong></p>
-      <code>https://wx2md-worker.[:username].workers.dev/md?url=https%3A%2F%2Fwww.cls.cn%2Fdetail%2F2003789</code>
-      <p><small>注：需要对URL进行 encodeURIComponent 编码</small></p>
-    </div>
-
-    <h3>参数说明</h3>
-    <ul>
-      <li><code>url</code> - 要转换的网页完整地址（需要URL编码）</li>
-      <li><code>format=html</code> - 以HTML格式查看Markdown内容</li>
-      <li><code>download=true</code> - 触发Markdown文件下载</li>
-    </ul>
-
-    <h3>示例</h3>
-    <ul>
-      <li>
-        <p>转换任意网页为Markdown:</p>
-        <code>https://wx2md-worker.[:username].workers.dev/md?url=https%3A%2F%2Fexample.com%2Farticle</code>
-      </li>
-      <li>
-        <p>以HTML格式查看转换结果(方法1):</p>
-        <code>https://wx2md-worker.[:username].workers.dev/md?url=https%3A%2F%2Fexample.com%2Farticle&format=html</code>
-      </li>
-      <li>
-        <p>以HTML格式查看转换结果(方法2):</p>
-        <code>https://wx2md-worker.[:username].workers.dev/html/md?url=https%3A%2F%2Fexample.com%2Farticle</code>
-      </li>
-      <li>
-        <p>直接下载转换后的Markdown文件:</p>
-        <code>https://wx2md-worker.[:username].workers.dev/md?url=https%3A%2F%2Fexample.com%2Farticle&download=true</code>
-      </li>
-    </ul>
-  </div>
-
-  <div class="footer">
-    <p>© 2025 wx2md-worker - 基于 Cloudflare Workers 和 AI 技术构建</p>
-    <p>此服务使用 Cloudflare Workers AI 的 <a href="https://developers.cloudflare.com/workers-ai/markdown-conversion/" target="_blank">Markdown Conversion</a> 功能</p>
-  </div>
-</body>
-</html>`;
 }
