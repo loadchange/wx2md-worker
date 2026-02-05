@@ -48,15 +48,18 @@ async function convertWebpageToMarkdown(
 		// 获取原始 HTML 内容
 		const htmlContent = await articleResponse.text();
 
+		// 预处理 HTML 内容，处理懒加载图片
+		const processedHtml = preprocessHtml(htmlContent);
+
 		// 提取文章标题用于文件名
-		const title = getArticleTitle(htmlContent, fallbackTitle);
+		const title = getArticleTitle(processedHtml, fallbackTitle);
 
 		// 将 HTML 内容转换为 Markdown
 		console.log('开始转换为 Markdown');
 		const mdResult = await env.AI.toMarkdown([
 			{
 				name: `${title}.html`,
-				blob: new Blob([htmlContent], { type: 'text/html' }),
+				blob: new Blob([processedHtml], { type: 'text/html' }),
 			},
 		]);
 
@@ -369,4 +372,31 @@ function escapeHtml(unsafe: string): string {
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#039;');
+}
+
+/**
+ * 预处理 HTML 内容
+ * 主要处理懒加载图片的 data-src 属性，将其转换为 src 属性
+ * 微信公众号文章使用懒加载，图片的真实 URL 存储在 data-src 中
+ */
+function preprocessHtml(html: string): string {
+	// 处理 img 标签的懒加载属性
+	// 匹配 <img ... data-src="url" ... > 格式
+	// 将 data-src 的值复制到 src 属性中
+	return html.replace(/<img\s+([^>]*?)data-src=["']([^"']+)["']([^>]*)>/gi, (match, before, dataSrc, after) => {
+		// 检查是否已经有 src 属性且有有效值（非空、非占位符）
+		const hasSrc = /src=["'][^"']+["']/i.test(before + after);
+		const srcMatch = (before + after).match(/src=["']([^"']*)["']/i);
+		const srcValue = srcMatch ? srcMatch[1] : '';
+
+		// 如果 src 为空或是占位符，则用 data-src 替换
+		if (!hasSrc || !srcValue || srcValue.startsWith('data:') || srcValue === '') {
+			// 移除现有的空 src 属性
+			const cleanedBefore = before.replace(/src=["'][^"']*["']\s*/gi, '');
+			const cleanedAfter = after.replace(/src=["'][^"']*["']\s*/gi, '');
+			return `<img ${cleanedBefore}src="${dataSrc}" data-src="${dataSrc}"${cleanedAfter}>`;
+		}
+
+		return match;
+	});
 }
