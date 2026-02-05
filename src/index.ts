@@ -388,6 +388,15 @@ function escapeHtml(unsafe: string): string {
 }
 
 /**
+ * HTML属性值转义（用于双引号包裹的属性）
+ */
+function escapeHtmlAttr(unsafe: string): string {
+	return unsafe
+		.replace(/&/g, '&amp;')
+		.replace(/"/g, '&quot;');
+}
+
+/**
  * 预处理 HTML 内容
  * 主要处理懒加载图片的 data-src 属性，将其转换为 src 属性
  * 微信公众号文章使用懒加载，图片的真实 URL 存储在 data-src 中
@@ -400,16 +409,17 @@ function preprocessHtml(html: string): string {
 		// 合并前后属性以便检查
 		const otherAttrs = before + after;
 		// 检查是否已经有 src 属性且有有效值（非空、非占位符）
-		const hasSrc = /src=["'][^"']+["']/i.test(otherAttrs);
 		const srcMatch = otherAttrs.match(/src=["']([^"']*)["']/i);
 		const srcValue = srcMatch ? srcMatch[1] : '';
 
 		// 如果 src 为空或是占位符，则用 data-src 替换
-		if (!hasSrc || !srcValue || srcValue.startsWith('data:')) {
+		if (!srcValue || srcValue.startsWith('data:')) {
 			// 移除现有的空 src 属性
 			const cleanedBefore = before.replace(/src=["'][^"']*["']\s*/gi, '');
 			const cleanedAfter = after.replace(/src=["'][^"']*["']\s*/gi, '');
-			return `<img ${cleanedBefore}src="${dataSrc}" data-src="${dataSrc}"${cleanedAfter}>`;
+			// 转义 dataSrc 以防止潜在的属性注入
+			const safeSrc = escapeHtmlAttr(dataSrc);
+			return `<img ${cleanedBefore}src="${safeSrc}" data-src="${safeSrc}"${cleanedAfter}>`;
 		}
 
 		return match;
