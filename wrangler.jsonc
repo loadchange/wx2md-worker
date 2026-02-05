@@ -12,5 +12,16 @@
 	},
 	"ai": {
 		"binding": "AI"
+	},
+	"r2_buckets": [
+		{
+			"binding": "IMAGES_BUCKET",
+			"bucket_name": "wx2md-images"
+		}
+	],
+	"vars": {
+		// 替换为你的 R2 公开访问域名
+		// 可以使用 R2 默认公开域名或自定义域名
+		"R2_PUBLIC_URL": "https://your-r2-domain.example.com"
 	}
 }

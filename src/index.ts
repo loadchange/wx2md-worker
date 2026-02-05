@@ -71,7 +71,17 @@ async function convertWebpageToMarkdown(
 		}
 
 		// 获取转换后的 Markdown 内容
-		const markdownContent = mdResult[0].data;
+		const result = mdResult[0];
+		if (!('data' in result) || !result.data) {
+			return new Response('Markdown 转换失败: 无法获取转换结果', {
+				status: 500,
+				headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+			});
+		}
+		let markdownContent = result.data;
+
+		// 处理微信图片：下载并上传到 R2，替换链接（绕过防盗链）
+		markdownContent = await processImagesInMarkdown(processedHtml, markdownContent, env);
 
 		// 检查是否是HTML模式
 		if (isHtmlMode) {
@@ -96,8 +106,9 @@ async function convertWebpageToMarkdown(
 		// 返回 Markdown 内容
 		return new Response(markdownContent, { headers });
 	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
 		console.error('处理请求时发生错误:', error);
-		return new Response(`处理请求时发生错误: ${error.message}`, {
+		return new Response(`处理请求时发生错误: ${errorMessage}`, {
 			status: 500,
 			headers: { 'Content-Type': 'text/plain; charset=utf-8' },
 		});
@@ -248,8 +259,9 @@ export default {
 				download
 			);
 		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error('处理请求时发生错误:', error);
-			return new Response(`处理请求时发生错误: ${error.message}`, {
+			return new Response(`处理请求时发生错误: ${errorMessage}`, {
 				status: 500,
 				headers: { 'Content-Type': 'text/plain; charset=utf-8' },
 			});
@@ -281,7 +293,8 @@ async function fetchWithRetry(url: string, retries = 3, delay = 1000, customRefe
 			return await fetch(url, { headers });
 		} catch (error) {
 			if (i === retries - 1) throw error;
-			console.log(`请求失败 (${i + 1}/${retries})，${delay}ms 后重试: ${error.message}`);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			console.log(`请求失败 (${i + 1}/${retries})，${delay}ms 后重试: ${errorMessage}`);
 			await new Promise((resolve) => setTimeout(resolve, delay));
 			// 增加重试延迟
 			delay *= 1.5;
@@ -402,3 +415,267 @@ function preprocessHtml(html: string): string {
 		return match;
 	});
 }
+
+/**
+ * ============================================
+ * R2 图片存储相关函数
+ * 解决微信图片防盗链问题
+ * ============================================
+ */
+
+/**
+ * 检查是否为微信图片 URL
+ */
+function isWechatImageUrl(url: string): boolean {
+	return url.includes('mmbiz.qpic.cn') || url.includes('mmbiz.qlogo.cn');
+}
+
+/**
+ * 从 HTML 和 Markdown 中提取所有微信图片 URL
+ * 返回去重后的 URL 列表
+ */
+function extractWechatImageUrls(html: string, markdown: string): string[] {
+	// 匹配微信图片域名的 URL
+	const regex = /https?:\/\/mmbiz\.q(?:pic|logo)\.cn[^\s"'<>)\]]+/gi;
+
+	const htmlMatches = html.match(regex) || [];
+	const mdMatches = markdown.match(regex) || [];
+
+	// 合并并去重
+	const allUrls = [...new Set([...htmlMatches, ...mdMatches])];
+
+	// 清理 URL（移除可能的尾部标点）
+	return allUrls.map((url) => url.replace(/[),.\]]+$/, ''));
+}
+
+/**
+ * 下载图片内容（绕过微信防盗链）
+ * 使用正确的 Referer 头模拟微信内访问
+ */
+async function downloadWechatImage(
+	url: string
+): Promise<{ data: ArrayBuffer; contentType: string; extension: string } | null> {
+	try {
+		console.log(`下载微信图片: ${url}`);
+
+		const response = await fetch(url, {
+			headers: {
+				'User-Agent':
+					'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+				Accept: 'image/webp,image/avif,image/jxl,image/heic,image/heic-sequence,video/*;q=0.9,*/*;q=0.8',
+				'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+				// 关键：使用微信域名作为 Referer 绕过防盗链
+				Referer: 'https://mp.weixin.qq.com/',
+			},
+		});
+
+		if (!response.ok) {
+			console.error(`下载图片失败: ${url}, 状态码: ${response.status}`);
+			return null;
+		}
+
+		const contentType = response.headers.get('content-type') || 'image/jpeg';
+		const data = await response.arrayBuffer();
+
+		// 根据 Content-Type 确定文件扩展名
+		let extension = 'jpg';
+		if (contentType.includes('png')) {
+			extension = 'png';
+		} else if (contentType.includes('gif')) {
+			extension = 'gif';
+		} else if (contentType.includes('webp')) {
+			extension = 'webp';
+		} else if (contentType.includes('svg')) {
+			extension = 'svg';
+		}
+
+		console.log(`图片下载成功: ${url}, 大小: ${data.byteLength} bytes, 类型: ${contentType}`);
+		return { data, contentType, extension };
+	} catch (error) {
+		console.error(`下载图片异常: ${url}`, error);
+		return null;
+	}
+}
+
+/**
+ * 计算字符串的 SHA-256 哈希值（用于生成唯一文件名）
+ */
+async function sha256(str: string): Promise<string> {
+	const encoder = new TextEncoder();
+	const data = encoder.encode(str);
+	const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+	const hashArray = Array.from(new Uint8Array(hashBuffer));
+	return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * 生成图片在 R2 中的存储路径
+ * 格式: images/{年月}/{hash前8位}.{扩展名}
+ */
+async function generateImageKey(url: string, extension: string): Promise<string> {
+	const hash = await sha256(url);
+	const date = new Date();
+	const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`;
+	// 使用哈希前16位作为文件名，足够避免冲突
+	return `images/${yearMonth}/${hash.substring(0, 16)}.${extension}`;
+}
+
+/**
+ * 上传图片到 R2 存储
+ * 返回公开访问 URL
+ */
+async function uploadImageToR2(
+	env: Env,
+	imageData: ArrayBuffer,
+	key: string,
+	contentType: string
+): Promise<string | null> {
+	try {
+		console.log(`上传图片到 R2: ${key}`);
+
+		// 检查 R2 bucket 是否可用
+		if (!env.IMAGES_BUCKET) {
+			console.error('R2 bucket 未配置');
+			return null;
+		}
+
+		// 先检查是否已存在（避免重复上传）
+		const existing = await env.IMAGES_BUCKET.head(key);
+		if (existing) {
+			console.log(`图片已存在于 R2: ${key}`);
+			return `${env.R2_PUBLIC_URL}/${key}`;
+		}
+
+		// 上传到 R2
+		await env.IMAGES_BUCKET.put(key, imageData, {
+			httpMetadata: {
+				contentType: contentType,
+				// 设置缓存控制，图片可长期缓存
+				cacheControl: 'public, max-age=31536000',
+			},
+		});
+
+		console.log(`图片上传成功: ${key}`);
+		return `${env.R2_PUBLIC_URL}/${key}`;
+	} catch (error) {
+		console.error(`上传图片到 R2 失败: ${key}`, error);
+		return null;
+	}
+}
+
+/**
+ * 处理所有微信图片：下载并上传到 R2，返回 URL 映射表
+ */
+async function processWechatImages(
+	imageUrls: string[],
+	env: Env
+): Promise<Map<string, string>> {
+	const urlMapping = new Map<string, string>();
+
+	if (imageUrls.length === 0) {
+		return urlMapping;
+	}
+
+	console.log(`开始处理 ${imageUrls.length} 张微信图片...`);
+
+	// 并发处理所有图片（限制并发数避免请求过多）
+	const CONCURRENCY_LIMIT = 5;
+	const chunks: string[][] = [];
+
+	for (let i = 0; i < imageUrls.length; i += CONCURRENCY_LIMIT) {
+		chunks.push(imageUrls.slice(i, i + CONCURRENCY_LIMIT));
+	}
+
+	for (const chunk of chunks) {
+		const results = await Promise.allSettled(
+			chunk.map(async (originalUrl) => {
+				// 下载图片
+				const imageResult = await downloadWechatImage(originalUrl);
+				if (!imageResult) {
+					return { originalUrl, newUrl: null };
+				}
+
+				// 生成存储路径
+				const key = await generateImageKey(originalUrl, imageResult.extension);
+
+				// 上传到 R2
+				const newUrl = await uploadImageToR2(
+					env,
+					imageResult.data,
+					key,
+					imageResult.contentType
+				);
+
+				return { originalUrl, newUrl };
+			})
+		);
+
+		// 收集成功的映射
+		for (const result of results) {
+			if (result.status === 'fulfilled' && result.value.newUrl) {
+				urlMapping.set(result.value.originalUrl, result.value.newUrl);
+			}
+		}
+	}
+
+	console.log(`图片处理完成，成功: ${urlMapping.size}/${imageUrls.length}`);
+	return urlMapping;
+}
+
+/**
+ * 替换 Markdown 中的微信图片链接为 R2 链接
+ */
+function replaceImageUrls(markdown: string, urlMapping: Map<string, string>): string {
+	let result = markdown;
+
+	for (const [originalUrl, newUrl] of urlMapping) {
+		// 全局替换所有出现的原始 URL
+		// 需要转义 URL 中的特殊正则字符
+		const escapedUrl = originalUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		const regex = new RegExp(escapedUrl, 'g');
+		result = result.replace(regex, newUrl);
+	}
+
+	return result;
+}
+
+/**
+ * 主图片处理函数
+ * 提取、下载、上传微信图片，并替换 Markdown 中的链接
+ */
+async function processImagesInMarkdown(
+	html: string,
+	markdown: string,
+	env: Env
+): Promise<string> {
+	// 检查 R2 配置是否完整
+	if (!env.IMAGES_BUCKET || !env.R2_PUBLIC_URL || env.R2_PUBLIC_URL === 'https://your-r2-domain.example.com') {
+		console.log('R2 未配置或使用默认配置，跳过图片处理');
+		return markdown;
+	}
+
+	try {
+		// 提取所有微信图片 URL
+		const imageUrls = extractWechatImageUrls(html, markdown);
+
+		if (imageUrls.length === 0) {
+			console.log('未发现微信图片，无需处理');
+			return markdown;
+		}
+
+		console.log(`发现 ${imageUrls.length} 张微信图片，开始处理...`);
+
+		// 下载并上传所有图片
+		const urlMapping = await processWechatImages(imageUrls, env);
+
+		// 替换 Markdown 中的链接
+		const processedMarkdown = replaceImageUrls(markdown, urlMapping);
+
+		return processedMarkdown;
+	} catch (error) {
+		console.error('处理图片时发生错误:', error);
+		// 出错时返回原始 Markdown，不影响主流程
+		return markdown;
+	}
+}
+
