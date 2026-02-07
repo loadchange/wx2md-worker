@@ -173,6 +173,5 @@ dist
 .wrangler/
 
 
-CLAUDE.md
 .claude
 package-lock.json

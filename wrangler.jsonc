@@ -20,8 +20,8 @@
 		}
 	],
 	"vars": {
-		// 替换为你的 R2 公开访问域名
-		// 可以使用 R2 默认公开域名或自定义域名
-		"R2_PUBLIC_URL": "https://your-r2-domain.example.com"
+		// R2 公开访问域名（使用 r2.dev 默认域名）
+		// 如需使用自定义域名，需先配置 DNS 记录
+		"R2_PUBLIC_URL": "https://mp-r2.084817.xyz"
 	}
 }
