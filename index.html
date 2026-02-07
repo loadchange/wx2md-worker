@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>网页内容转 Markdown 工具</title>
+  <title>[WX2MD-WORKER]网页内容转 Markdown 工具</title>
   <style>
     :root {
       --primary-color: #6366f1;
@@ -36,7 +36,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
       line-height: 1.6;
       color: var(--text-primary);
-      background: 
+      background:
         radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
         radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
         radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%),
@@ -248,7 +248,7 @@
       border-bottom: 1px solid var(--border-color);
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 12px;
       transition: var(--transition);
     }
 
@@ -263,6 +263,12 @@
 
     .result-content {
       flex: 1;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 0;
+      flex-shrink: 0;
     }
 
     .result-title {
@@ -288,21 +294,36 @@
       color: var(--text-tertiary);
     }
 
-    .copy-btn {
+    .copy-btn, .open-btn {
       padding: 12px 24px;
       background: var(--primary-color);
       color: white;
       border: none;
-      border-radius: var(--border-radius-sm);
       font-weight: 600;
       cursor: pointer;
       transition: var(--transition);
       white-space: nowrap;
     }
 
+    .copy-btn {
+      border-radius: var(--border-radius-sm) 0 0 var(--border-radius-sm);
+    }
+
+    .open-btn {
+      border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+      padding: 12px 20px;
+      background: var(--primary-dark);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
     .copy-btn:hover {
       background: var(--primary-dark);
-      transform: scale(1.05);
+      transform: scale(1.02);
+    }
+
+    .open-btn:hover {
+      background: var(--secondary-color);
+      transform: scale(1.02);
     }
 
     .copy-btn.copied {
@@ -502,9 +523,16 @@
         gap: 16px;
       }
 
-      .copy-btn {
-        align-self: flex-start;
+      .button-group {
         width: 100%;
+      }
+
+      .copy-btn {
+        flex: 1;
+      }
+
+      .open-btn {
+        flex-shrink: 0;
       }
 
       .parameter-grid {
@@ -608,10 +636,10 @@
     <div class="shape shape-3"></div>
     <div class="shape shape-4"></div>
   </div>
-  
+
   <div class="container">
     <header class="header">
-      <h1>网页内容转 Markdown 工具</h1>
+      <h1>[WX2MD-WORKER]网页内容转 Markdown 工具</h1>
       <p class="subtitle">专业的微信公众号文章和网页内容转换服务</p>
       <a href="https://github.com/loadchange/wx2md-worker" target="_blank" class="github-link">
         <svg class="github-icon" fill="currentColor" viewBox="0 0 24 24">
@@ -625,13 +653,13 @@
       <section class="playground">
         <h2 class="section-title">🚀 快速转换</h2>
         <p class="section-description">输入任意网址，一键生成所有格式的转换链接</p>
-        
+
         <div class="input-group">
-          <input 
-            type="text" 
-            id="urlInput" 
-            class="url-input" 
-            placeholder="输入网址，如 https://mp.weixin.qq.com/s/MhzcF7u_p3UHZ9qR6hptww 或任意网页地址"
+          <input
+            type="text"
+            id="urlInput"
+            class="url-input"
+            placeholder="输入网址，如 https://mp.weixin.qq.com/s/LNCPaPLPjeySLsNrIytzOA 或任意网页地址"
           />
         </div>
 
@@ -649,7 +677,7 @@
       <section class="feature-section">
         <h2>📱 微信公众号文章转换</h2>
         <p>专业的微信公众号文章转换服务，完美解决内容访问和格式转换问题</p>
-        
+
         <ul class="feature-list">
           <li>绕过微信对特定 IP 的访问限制</li>
           <li>保留原始排版和图片，生成高质量 Markdown</li>
@@ -664,11 +692,11 @@
           <div class="example-label">示例转换</div>
           <div style="margin-bottom: 16px;">
             <div class="example-label">原微信文章</div>
-            <div class="example-code">https://mp.weixin.qq.com/s/MhzcF7u_p3UHZ9qR6hptww</div>
+            <div class="example-code">https://mp.weixin.qq.com/s/LNCPaPLPjeySLsNrIytzOA</div>
           </div>
           <div>
             <div class="example-label">转换后访问</div>
-            <div class="example-code">https://wx2md-worker.[:username].workers.dev/s/MhzcF7u_p3UHZ9qR6hptww</div>
+            <div class="example-code">https://wx2md-worker.[:username].workers.dev/s/LNCPaPLPjeySLsNrIytzOA</div>
           </div>
         </div>
 
@@ -695,7 +723,7 @@
       <section class="feature-section">
         <h2>🌐 通用网页转换</h2>
         <p>新功能！支持转换<strong>任何网页</strong>为 Markdown 格式，适用于新闻文章、博客、技术文档等</p>
-        
+
         <h3 style="font-size: 1.5rem; margin-bottom: 16px; color: var(--text-primary);">使用方法</h3>
         <p style="color: var(--text-secondary); margin-bottom: 24px;">使用 <code>/md</code> 路径并通过 <code>url</code> 参数提供要转换的完整网页地址：</p>
 
@@ -750,7 +778,7 @@
         const shapes = document.querySelectorAll('.shape');
         const mouseX = e.clientX / window.innerWidth;
         const mouseY = e.clientY / window.innerHeight;
-        
+
         shapes.forEach((shape, index) => {
           const speed = (index + 1) * 0.5;
           const x = (mouseX - 0.5) * speed * 20;
@@ -769,17 +797,18 @@
 
       // Convert button click handler
       convertBtn.addEventListener('click', function() {
-        const inputUrl = urlInput.value.trim();
-        
+        let inputUrl = urlInput.value.trim();
+
+        // 如果输入为空，使用示例文章链接
         if (!inputUrl) {
-          showError('请输入有效的网址');
-          return;
+          inputUrl = 'https://mp.weixin.qq.com/s/LNCPaPLPjeySLsNrIytzOA';
+          urlInput.value = inputUrl;
         }
 
         // Clear previous results and errors
         results.innerHTML = '';
         errorDiv.style.display = 'none';
-        
+
         // Show loading state
         convertBtn.innerHTML = '<span class="loading"></span> 生成中...';
         convertBtn.disabled = true;
@@ -840,15 +869,15 @@
       // Generate WeChat article links
       function generateWechatLinks(articleId) {
         addResultItem(
-          '📝 Markdown 格式',
-          `${currentDomain}/s/${articleId}`,
-          '直接查看Markdown内容'
+          '🌐 HTML 格式查看 (带预览)',
+          `${currentDomain}/html/s/${articleId}`,
+          '以HTML格式查看Markdown内容，支持实时编辑和预览'
         );
 
         addResultItem(
-          '🌐 HTML 格式查看 (推荐)',
-          `${currentDomain}/html/s/${articleId}`,
-          '以HTML格式查看Markdown内容'
+          '📝 Markdown 格式',
+          `${currentDomain}/s/${articleId}`,
+          '直接查看Markdown内容'
         );
 
         addResultItem(
@@ -869,15 +898,15 @@
         const encodedUrl = encodeURIComponent(url);
 
         addResultItem(
-          '📝 Markdown 格式',
-          `${currentDomain}/md?url=${encodedUrl}`,
-          '直接查看Markdown内容'
+          '🌐 HTML 格式查看 (带预览)',
+          `${currentDomain}/html/md?url=${encodedUrl}`,
+          '以HTML格式查看Markdown内容，支持实时编辑和预览'
         );
 
         addResultItem(
-          '🌐 HTML 格式查看 (方式1)',
-          `${currentDomain}/html/md?url=${encodedUrl}`,
-          '以HTML格式查看Markdown内容'
+          '📝 Markdown 格式',
+          `${currentDomain}/md?url=${encodedUrl}`,
+          '直接查看Markdown内容'
         );
 
         addResultItem(
@@ -917,15 +946,32 @@
         content.appendChild(urlEl);
         content.appendChild(descEl);
 
+        // 创建按钮组
+        const buttonGroup = document.createElement('div');
+        buttonGroup.className = 'button-group';
+
+        // 复制按钮
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-btn';
-        copyBtn.textContent = '复制链接';
+        copyBtn.textContent = '📋 复制';
         copyBtn.addEventListener('click', function() {
           copyToClipboard(url, copyBtn);
         });
 
+        // 打开按钮
+        const openBtn = document.createElement('button');
+        openBtn.className = 'open-btn';
+        openBtn.textContent = '🔗 打开';
+        openBtn.title = '在新标签页打开';
+        openBtn.addEventListener('click', function() {
+          window.open(url, '_blank');
+        });
+
+        buttonGroup.appendChild(copyBtn);
+        buttonGroup.appendChild(openBtn);
+
         item.appendChild(content);
-        item.appendChild(copyBtn);
+        item.appendChild(buttonGroup);
 
         results.appendChild(item);
       }
@@ -957,7 +1003,7 @@
         errorDiv.textContent = message;
         errorDiv.style.display = 'block';
         results.classList.remove('show');
-        
+
         // Scroll to error
         errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
