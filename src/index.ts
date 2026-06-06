@@ -24,6 +24,28 @@ export default {
 
 			console.log(`处理请求路径: ${path}`);
 
+			// 检查是否为可缓存的路由 (转换路径)
+			const isCacheableRoute =
+				path.startsWith('/s/') ||
+				path.startsWith('/html/s/') ||
+				path === '/md' ||
+				path === '/html/md';
+
+			// 检查缓存 (仅针对 GET 请求，且 URL 未带 nocache 参数)
+			const cache = caches.default;
+			const bypassCache = url.searchParams.has('nocache') || request.headers.get('cache-control') === 'no-cache';
+			
+			if (request.method === 'GET' && isCacheableRoute && !bypassCache) {
+				const cachedResponse = await cache.match(request);
+				if (cachedResponse) {
+					console.log(`[Cache] 命中缓存: ${request.url}`);
+					// 克隆响应以避免只读限制，并添加缓存命中状态头
+					const response = new Response(cachedResponse.body, cachedResponse);
+					response.headers.set('X-Cache', 'HIT');
+					return response;
+				}
+			}
+
 			// 健康检查
 			if (path === '/health' || path === '/healthz') {
 				return new Response(
@@ -48,31 +70,44 @@ export default {
 			}
 
 			// HTML 格式通用网页转换
+			let response: Response;
 			if (path === '/html/md') {
-				return await handleGenericWebpage(url, env, ctx, true);
+				response = await handleGenericWebpage(url, env, ctx, true);
 			}
-
 			// 通用网页转 Markdown
-			if (path === '/md') {
+			else if (path === '/md') {
 				const isHtmlMode = url.searchParams.get('format') === 'html';
-				return await handleGenericWebpage(url, env, ctx, isHtmlMode);
+				response = await handleGenericWebpage(url, env, ctx, isHtmlMode);
 			}
-
 			// 微信公众号文章路由
-			let isHtmlMode = false;
-			let articleId = '';
+			else if (path.startsWith('/html/s/') || path.startsWith('/s/')) {
+				let isHtmlMode = false;
+				let articleId = '';
 
-			if (path.startsWith('/html/s/')) {
-				isHtmlMode = true;
-				articleId = path.substring(8);
-			} else if (path.startsWith('/s/')) {
-				articleId = path.substring(3);
-
-				// 兼容旧格式: /s/{id}.html
-				if (articleId.endsWith('.html')) {
+				if (path.startsWith('/html/s/')) {
 					isHtmlMode = true;
-					articleId = articleId.slice(0, -5);
+					articleId = path.substring(8);
+				} else {
+					articleId = path.substring(3);
+
+					// 兼容旧格式: /s/{id}.html
+					if (articleId.endsWith('.html')) {
+						isHtmlMode = true;
+						articleId = articleId.slice(0, -5);
+					}
 				}
+
+				if (!articleId) {
+					return new Response('请提供微信公众号文章 ID', {
+						status: 400,
+						headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+					});
+				}
+
+				const wxArticleUrl = `${WECHAT_URL_PREFIX}s/${articleId}`;
+				const download = url.searchParams.get('download') === 'true';
+
+				response = await convertWebpageToMarkdown(wxArticleUrl, env, ctx, articleId, isHtmlMode, download);
 			} else {
 				return new Response(
 					'请提供正确的微信公众号文章路径，格式: /s/{article_id} 或 /html/s/{article_id}，或使用 /md?url=网址 转换其他网页',
@@ -83,17 +118,18 @@ export default {
 				);
 			}
 
-			if (!articleId) {
-				return new Response('请提供微信公众号文章 ID', {
-					status: 400,
-					headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-				});
+			// 如果是成功的 GET 响应，且属于可缓存路由，则存入缓存
+			if (request.method === 'GET' && isCacheableRoute && response.status === 200 && !bypassCache) {
+				const cachedResponse = response.clone();
+				// 设置缓存策略 (例如缓存 1 小时)
+				cachedResponse.headers.set('Cache-Control', 'public, max-age=3600');
+				response.headers.set('X-Cache', 'MISS');
+				
+				// 后台静默写入缓存，不阻塞客户端响应
+				ctx.waitUntil(cache.put(request, cachedResponse));
 			}
 
-			const wxArticleUrl = `${WECHAT_URL_PREFIX}s/${articleId}`;
-			const download = url.searchParams.get('download') === 'true';
-
-			return await convertWebpageToMarkdown(wxArticleUrl, env, ctx, articleId, isHtmlMode, download);
+			return response;
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error('处理请求时发生错误:', error);

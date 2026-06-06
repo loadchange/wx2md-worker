@@ -1,21 +1,73 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{TITLE}}</title>
 
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <!-- Marked.js - Markdown 解析器 -->
   <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
 
   <!-- Highlight.js - 代码高亮 -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css" id="hljs-theme">
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
 
   <!-- GitHub Markdown CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.5.0/github-markdown.min.css">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
+    :root {
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'Fira Code', 'SF Mono', Monaco, monospace;
+
+      /* Dark Theme (Default) */
+      --bg-base: #0b0f19;
+      --bg-surface: #111827;
+      --bg-editor: #0f172a;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: #6366f1;
+      
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-tertiary: #6b7280;
+      
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.15);
+      --accent: #14b8a6;
+      --accent-glow: rgba(20, 184, 166, 0.15);
+      
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    html.light {
+      /* Light Theme */
+      --bg-base: #f1f5f9;
+      --bg-surface: #ffffff;
+      --bg-editor: #ffffff;
+      --border-color: rgba(0, 0, 0, 0.08);
+      --border-focus: #4f46e5;
+      
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-tertiary: #94a3b8;
+      
+      --primary: #4f46e5;
+      --primary-hover: #3730a3;
+      --primary-glow: rgba(79, 70, 229, 0.1);
+      --accent: #0d9488;
+      --accent-glow: rgba(13, 148, 136, 0.1);
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -23,383 +75,821 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #f6f8fa;
+      font-family: var(--font-sans);
+      background-color: var(--bg-base);
+      color: var(--text-primary);
       height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     /* 顶部工具栏 */
     .toolbar {
-      background: white;
-      border-bottom: 1px solid #d0d7de;
-      padding: 12px 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 50;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    @media (min-width: 992px) {
+      .toolbar {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 24px;
+      }
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .back-home-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .back-home-btn:hover {
+      border-color: var(--primary);
+      color: var(--text-primary);
+      background: var(--primary-glow);
     }
 
     .toolbar h1 {
-      font-size: 18px;
+      font-family: var(--font-display);
+      font-size: 16px;
       font-weight: 600;
-      color: #24292f;
-      margin-bottom: 8px;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .copy-buttons {
+    /* Segmented Layout Controller */
+    .layout-switcher {
       display: flex;
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border-color);
+      padding: 3px;
+      border-radius: 8px;
+      align-self: center;
+    }
+
+    html.light .layout-switcher {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .switcher-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .switcher-btn.active {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Toolbar Actions */
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
       gap: 8px;
       flex-wrap: wrap;
-      align-items: center;
+      justify-content: flex-end;
     }
 
-    .button-group {
+    .btn-action {
+      background: var(--bg-base);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
       display: flex;
-      gap: 0;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+      text-decoration: none;
     }
 
-    .edit-btn {
-      padding: 6px 12px;
-      font-size: 13px;
-      background: #ffffff;
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-      color: #24292f;
-      font-weight: 500;
-      margin-left: auto;
+    .btn-action:hover {
+      background: var(--primary-glow);
+      border-color: var(--primary);
     }
 
-    .edit-btn:hover {
-      background: #f6f8fa;
-      border-color: #b1b9c1;
+    .btn-action.success {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent);
     }
 
-    .edit-btn.active {
-      background: #0969da;
+    .btn-action.lock-active {
+      background: #ef4444;
       color: white;
-      border-color: #0969da;
+      border-color: #ef4444;
     }
 
-    .copy-btn, .open-btn {
-      padding: 6px 12px;
-      font-size: 13px;
-      background: #f6f8fa;
-      border: 1px solid #d0d7de;
-      cursor: pointer;
-      transition: all 0.2s;
-      color: #24292f;
-      font-weight: 500;
-    }
-
-    .copy-btn {
-      border-radius: 6px 0 0 6px;
-      border-right: none;
-    }
-
-    .open-btn {
-      border-radius: 0 6px 6px 0;
-      background: #ffffff;
-      padding: 6px 10px;
-    }
-
-    .copy-btn:hover, .open-btn:hover {
-      background: #e5e9ed;
-      border-color: #b1b9c1;
-    }
-
-    .copy-btn:active, .open-btn:active {
-      background: #d9dfe4;
-    }
-
-    .copy-btn.success {
-      background: #2ea44f;
-      color: white;
-      border-color: #2ea44f;
-    }
-
-    .open-btn:hover {
-      background: #f6f8fa;
-    }
-
-    /* 主内容区 - 左右分栏 */
+    /* 主内容区 */
     .main-container {
       flex: 1;
       display: flex;
       overflow: hidden;
+      position: relative;
     }
 
     .editor-pane, .preview-pane {
       flex: 1;
-      overflow-y: auto;
-      padding: 20px;
+      height: 100%;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
+      background: var(--bg-surface);
+      transition: flex 0.3s ease;
     }
 
     .editor-pane {
-      background: #ffffff;
-      border-right: 1px solid #d0d7de;
+      border-right: 1px solid var(--border-color);
     }
 
-    .preview-pane {
-      background: #ffffff;
+    .pane-header {
+      height: 40px;
+      background: rgba(0, 0, 0, 0.05);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
-    /* Markdown 代码编辑器样式 */
+    /* Code Editor style */
+    .editor-wrapper {
+      flex: 1;
+      padding: 20px;
+      overflow: hidden;
+      display: flex;
+    }
+
     .markdown-editor {
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      font-size: 13px;
+      font-family: var(--font-mono);
+      font-size: 14px;
       line-height: 1.6;
-      background: #ffffff;
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
-      padding: 16px;
+      background: var(--bg-editor);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
       white-space: pre-wrap;
       word-wrap: break-word;
-      overflow-x: auto;
-      color: #24292f;
-      position: relative;
+      overflow-y: auto;
+      color: var(--text-primary);
       width: 100%;
-      flex: 1;
+      height: 100%;
       resize: none;
+      outline: none;
       box-sizing: border-box;
+      transition: var(--transition);
     }
 
     .markdown-editor:focus {
-      outline: none;
-      border-color: #0969da;
-      box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--primary-glow);
     }
 
     .markdown-editor[readonly] {
       cursor: default;
-      background: #f6f8fa;
+      background: rgba(0, 0, 0, 0.1);
+      opacity: 0.8;
     }
 
-    /* GitHub Markdown 样式 */
+    /* Previewer box */
+    .preview-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: var(--bg-editor);
+    }
+
+    /* GitHub Markdown Theme Overrides for integration */
     .markdown-body {
       box-sizing: border-box;
       min-width: 200px;
-      max-width: 980px;
+      max-width: 820px;
       margin: 0 auto;
-      padding: 32px;
+      padding: 20px 24px;
+      background-color: transparent !important;
+      color: var(--text-primary) !important;
     }
 
-    /* 响应式设计 */
+    html.dark .markdown-body {
+      color-scheme: dark;
+    }
+
+    html.dark .markdown-body h1,
+    html.dark .markdown-body h2,
+    html.dark .markdown-body h3,
+    html.dark .markdown-body h4,
+    html.dark .markdown-body h5,
+    html.dark .markdown-body h6 {
+      color: var(--text-primary);
+      border-bottom-color: var(--border-color);
+    }
+
+    html.dark .markdown-body blockquote {
+      color: var(--text-secondary);
+      border-left-color: var(--border-focus);
+    }
+
+    html.dark .markdown-body code {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+    }
+
+    html.dark .markdown-body pre {
+      background-color: #0f172a;
+      border: 1px solid var(--border-color);
+    }
+
+    html.dark .markdown-body pre code {
+      background-color: transparent;
+    }
+
+    html.dark .markdown-body hr {
+      background-color: var(--border-color);
+    }
+
+    html.dark .markdown-body table tr {
+      background-color: #111827;
+      border-top-color: var(--border-color);
+    }
+
+    html.dark .markdown-body table tr:nth-child(2n) {
+      background-color: #1f2937;
+    }
+
+    html.dark .markdown-body table th,
+    html.dark .markdown-body table td {
+      border-color: var(--border-color);
+    }
+
+    /* Sidebar - Table of Contents & Stats */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      transition: width 0.3s ease;
+    }
+
     @media (max-width: 1200px) {
+      .sidebar {
+        display: none; /* Hide sidebar on smaller layouts */
+      }
+    }
+
+    .sidebar-section {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-section:last-child {
+      border-bottom: none;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-title {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border-color);
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    html.light .stat-card {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* TOC Menu */
+    .toc-container {
+      flex: 1;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .toc-item a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      display: block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: var(--transition);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toc-item a:hover {
+      color: var(--text-primary);
+      background: var(--bg-base);
+    }
+
+    .toc-indent-1 { padding-left: 8px; font-weight: 500; }
+    .toc-indent-2 { padding-left: 16px; font-size: 12px; }
+    .toc-indent-3 { padding-left: 24px; font-size: 11px; }
+
+    /* Layout Specific Adjustments */
+    .main-container.layout-edit-only .preview-pane,
+    .main-container.layout-edit-only .sidebar {
+      display: none;
+    }
+
+    .main-container.layout-preview-only .editor-pane {
+      display: none;
+    }
+    .main-container.layout-preview-only .preview-pane {
+      flex: 1;
+    }
+
+    @media (max-width: 992px) {
       .main-container {
         flex-direction: column;
       }
-
       .editor-pane {
         border-right: none;
-        border-bottom: 1px solid #d0d7de;
+        border-bottom: 1px solid var(--border-color);
+        height: 50%;
       }
-    }
-
-    /* 滚动条样式 */
-    ::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: #f6f8fa;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: #d0d7de;
-      border-radius: 5px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #b1b9c1;
+      .preview-pane {
+        height: 50%;
+      }
+      .main-container.layout-split-screen .editor-pane,
+      .main-container.layout-split-screen .preview-pane {
+        height: 50%;
+        flex: none;
+      }
     }
   </style>
 </head>
 <body>
+
   <!-- Markdown 数据（JSON 编码，由 Worker 注入） -->
   <script id="markdown-data" type="application/json">{{MARKDOWN_JSON}}</script>
 
   <!-- 顶部工具栏 -->
-  <div class="toolbar">
-    <h1>{{TITLE}}</h1>
-    <div class="copy-buttons">
-      <div class="button-group">
-        <button class="copy-btn" onclick="copyMarkdown()">📋 复制 Markdown</button>
-        <button class="open-btn" onclick="openMarkdownAsText()" title="在新标签页以纯文本形式打开">🔗</button>
-      </div>
-      <div class="button-group">
-        <button class="copy-btn" onclick="copyCurrentUrl()">🔗 复制当前链接</button>
-        <button class="open-btn" onclick="openCurrentUrl()" title="在新标签页打开当前HTML预览">🔗</button>
-      </div>
-      <div class="button-group">
-        <button class="copy-btn" onclick="copyDownloadUrl()">⬇️ 复制下载链接</button>
-        <button class="open-btn" onclick="openDownloadUrl()" title="触发下载">⬇️</button>
-      </div>
-      <div class="button-group">
-        <button class="copy-btn" onclick="copyPlainUrl()">📄 复制纯文本链接</button>
-        <button class="open-btn" onclick="openPlainUrl()" title="在新标签页打开纯Markdown">🔗</button>
-      </div>
-      <button class="edit-btn" id="editBtn" onclick="toggleEdit()">🔒 锁定</button>
-      <button class="copy-btn" id="resetBtn" onclick="resetContent()" title="重置为原始内容">🔄 重置</button>
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <a href="/" class="back-home-btn" title="返回首页">
+        <i data-lucide="home" style="width: 16px; height: 16px;"></i>
+      </a>
+      <i data-lucide="file-text" style="width: 20px; height: 20px; color: var(--primary); flex-shrink: 0;"></i>
+      <h1 title="{{TITLE}}">{{TITLE}}</h1>
     </div>
-  </div>
 
-  <!-- 主内容区 - 左右分栏 -->
-  <div class="main-container">
-    <!-- 左侧：Markdown 代码 -->
-    <div class="editor-pane">
-      <textarea class="markdown-editor" id="markdown-code" spellcheck="false"></textarea>
+    <!-- Segmented switcher in the center -->
+    <div class="layout-switcher">
+      <button class="switcher-btn" id="layoutBtnEdit" onclick="changeLayout('edit-only')">
+        <i data-lucide="edit-3" style="width: 13px; height: 13px;"></i>
+        <span>仅编辑</span>
+      </button>
+      <button class="switcher-btn active" id="layoutBtnSplit" onclick="changeLayout('split-screen')">
+        <i data-lucide="columns" style="width: 13px; height: 13px;"></i>
+        <span>双栏分栏</span>
+      </button>
+      <button class="switcher-btn" id="layoutBtnPreview" onclick="changeLayout('preview-only')">
+        <i data-lucide="eye" style="width: 13px; height: 13px;"></i>
+        <span>仅预览</span>
+      </button>
     </div>
+
+    <!-- Right-aligned action buttons -->
+    <div class="toolbar-actions">
+      <button class="btn-action" id="themeToggleBtn" title="切换主题">
+        <i data-lucide="sun" id="sunIcon" style="width: 14px; height: 14px;"></i>
+        <i data-lucide="moon" id="moonIcon" style="width: 14px; height: 14px; display: none;"></i>
+      </button>
+      <button class="btn-action" onclick="copyMarkdownContent(this)">
+        <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+        <span>复制 Markdown</span>
+      </button>
+      <button class="btn-action" onclick="downloadMarkdownFile(this)">
+        <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+        <span>下载</span>
+      </button>
+      <button class="btn-action" id="editLockBtn" onclick="toggleEditLock()">
+        <i data-lucide="lock" id="lockIcon" style="width: 14px; height: 14px;"></i>
+        <span>锁定</span>
+      </button>
+      <button class="btn-action" id="resetContentBtn" onclick="resetToOriginalContent()" title="重置内容">
+        <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
+        <span>重置</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="main-container layout-split-screen" id="mainContainer">
+    <!-- 左侧：Markdown 代码 -->
+    <section class="editor-pane">
+      <div class="pane-header">
+        <span>Markdown 源码编辑器</span>
+        <span id="editorLockStateIndicator" style="color: var(--text-tertiary); font-size: 10px;">可编辑</span>
+      </div>
+      <div class="editor-wrapper">
+        <textarea class="markdown-editor" id="markdown-code" spellcheck="false" placeholder="在此输入 Markdown 代码..."></textarea>
+      </div>
+    </section>
 
     <!-- 右侧：预览效果 -->
-    <div class="preview-pane">
-      <div class="markdown-body" id="preview"></div>
-    </div>
-  </div>
+    <section class="preview-pane">
+      <div class="pane-header">
+        <span>实时渲染预览</span>
+        <span style="font-size: 10px;">GFM 渲染</span>
+      </div>
+      <div class="preview-wrapper">
+        <div class="markdown-body" id="preview"></div>
+      </div>
+    </section>
+
+    <!-- 最右侧：统计 & 目录 -->
+    <aside class="sidebar">
+      <!-- 统计板块 -->
+      <div class="sidebar-section">
+        <div class="sidebar-title">
+          <i data-lucide="bar-chart-2" style="width: 14px; height: 14px;"></i>
+          <span>文章统计</span>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="statWordsCount">0</div>
+            <div class="stat-label">字数 (Words)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statCharsCount">0</div>
+            <div class="stat-label">字符 (Chars)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statImagesCount">0</div>
+            <div class="stat-label">图片数量</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statReadTime">0m</div>
+            <div class="stat-label">预计阅读</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 目录板块 -->
+      <div class="sidebar-section">
+        <div class="sidebar-title">
+          <i data-lucide="list-ordered" style="width: 14px; height: 14px;"></i>
+          <span>目录导航</span>
+        </div>
+        <div class="toc-container">
+          <ul class="toc-list" id="tableOfContentsList">
+            <!-- Dynamically populated TOC -->
+          </ul>
+        </div>
+      </div>
+    </aside>
+  </main>
 
   <script>
-    // 从 JSON 数据中读取 Markdown 内容
-    var originalMarkdownContent = JSON.parse(
+    // 从注入的 JSON 数据读取 Markdown 内容
+    const originalMarkdownContent = JSON.parse(
       document.getElementById('markdown-data').textContent
     );
-    var markdownContent = originalMarkdownContent;
-    var isEditing = true; // 默认可编辑
+    let markdownContent = originalMarkdownContent;
+    let isEditingLocked = false; // 默认可编辑
 
-    var editorEl = document.getElementById('markdown-code');
-    var previewEl = document.getElementById('preview');
-    var editBtn = document.getElementById('editBtn');
-    var resetBtn = document.getElementById('resetBtn');
+    const editorEl = document.getElementById('markdown-code');
+    const previewEl = document.getElementById('preview');
+    const mainContainer = document.getElementById('mainContainer');
+    const editLockBtn = document.getElementById('editLockBtn');
 
-    // 初始化编辑器内容
-    editorEl.value = originalMarkdownContent;
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initTheme();
+      
+      // 初始化编辑器内容
+      editorEl.value = originalMarkdownContent;
 
-    // 配置 marked.js
-    marked.setOptions({
-      highlight: function(code, lang) {
-        if (lang && hljs.getLanguage(lang)) {
-          try {
-            return hljs.highlight(code, { language: lang }).value;
-          } catch (err) {}
-        }
-        return hljs.highlightAuto(code).value;
-      },
-      breaks: true,
-      gfm: true
+      // 配置 marked.js
+      marked.setOptions({
+        highlight: function(code, lang) {
+          if (lang && hljs.getLanguage(lang)) {
+            try {
+              return hljs.highlight(code, { language: lang }).value;
+            } catch (err) {}
+          }
+          return hljs.highlightAuto(code).value;
+        },
+        breaks: true,
+        gfm: true
+      });
+
+      // 初始化渲染预览与统计数据
+      renderMarkdownPreview(markdownContent);
+
+      // 监听编辑器输入事件，实时更新
+      editorEl.addEventListener('input', function() {
+        markdownContent = this.value;
+        renderMarkdownPreview(markdownContent);
+      });
     });
 
-    // 移除 frontmatter（YAML 头部）
+    // 主题切换管理
+    function initTheme() {
+      const themeToggleBtn = document.getElementById('themeToggleBtn');
+      const sunIcon = document.getElementById('sunIcon');
+      const moonIcon = document.getElementById('moonIcon');
+      const htmlEl = document.documentElement;
+
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      if (savedTheme === 'light') {
+        htmlEl.classList.remove('dark');
+        htmlEl.classList.add('light');
+        sunIcon.style.display = 'none';
+        moonIcon.style.display = 'block';
+        document.getElementById('hljs-theme').href = 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css';
+      } else {
+        htmlEl.classList.remove('light');
+        htmlEl.classList.add('dark');
+        sunIcon.style.display = 'block';
+        moonIcon.style.display = 'none';
+        document.getElementById('hljs-theme').href = 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css';
+      }
+
+      themeToggleBtn.addEventListener('click', () => {
+        if (htmlEl.classList.contains('dark')) {
+          htmlEl.classList.remove('dark');
+          htmlEl.classList.add('light');
+          sunIcon.style.display = 'none';
+          moonIcon.style.display = 'block';
+          localStorage.setItem('theme', 'light');
+          document.getElementById('hljs-theme').href = 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css';
+        } else {
+          htmlEl.classList.remove('light');
+          htmlEl.classList.add('dark');
+          sunIcon.style.display = 'block';
+          moonIcon.style.display = 'none';
+          localStorage.setItem('theme', 'dark');
+          document.getElementById('hljs-theme').href = 'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css';
+        }
+      });
+    }
+
+    // 移除 frontmatter
     function removeFrontmatter(content) {
-      var frontmatterRegex = /^---\n[\s\S]*?\n---\n/;
+      const frontmatterRegex = /^---\n[\s\S]*?\n---\n/;
       return content.replace(frontmatterRegex, '').trim();
     }
 
-    // 渲染预览
-    function renderPreview(content) {
-      var contentWithoutFrontmatter = removeFrontmatter(content);
+    // 渲染预览与目录、统计数据
+    function renderMarkdownPreview(content) {
+      const contentWithoutFrontmatter = removeFrontmatter(content);
       previewEl.innerHTML = marked.parse(contentWithoutFrontmatter);
-      document.querySelectorAll('pre code').forEach(function(block) {
+      
+      // 高亮代码块
+      document.querySelectorAll('pre code').forEach((block) => {
         hljs.highlightElement(block);
       });
+
+      // 统计字数、图片等
+      updateArticleStats(contentWithoutFrontmatter);
+
+      // 生成目录树导航
+      generateTableOfContents();
     }
 
-    // 初始化渲染
-    renderPreview(markdownContent);
+    // 统计字数与图片
+    function updateArticleStats(cleanText) {
+      // 过滤Markdown标记以近似统计实际文字数
+      const textOnly = cleanText
+        .replace(/[#*`_\[\]()\-+]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
-    // 监听编辑器输入事件，实时更新预览
-    editorEl.addEventListener('input', function() {
-      markdownContent = this.value;
-      renderPreview(markdownContent);
-    });
+      const wordsCount = textOnly.split(/\s+/).filter(Boolean).length;
+      const charsCount = cleanText.length;
+      
+      // 匹配 markdown 图片标记 ![alt](url) 以及 html <img> 标签
+      const mdImgCount = (cleanText.match(/!\[.*?\]\(.*?\)/g) || []).length;
+      const htmlImgCount = (cleanText.match(/<img[^>]*>/gi) || []).length;
+      const totalImages = mdImgCount + htmlImgCount;
 
-    // 复制功能
-    function copyToClipboard(text, button) {
-      navigator.clipboard.writeText(text).then(function() {
-        var originalText = button.textContent;
-        button.textContent = '✓ 已复制';
-        button.classList.add('success');
-        setTimeout(function() {
-          button.textContent = originalText;
-          button.classList.remove('success');
-        }, 2000);
-      }).catch(function(err) {
-        alert('复制失败: ' + err);
+      // 假定平均阅读速度为 200 字/分钟
+      const readMinutes = Math.max(1, Math.ceil(wordsCount / 200));
+
+      document.getElementById('statWordsCount').innerText = wordsCount;
+      document.getElementById('statCharsCount').innerText = charsCount;
+      document.getElementById('statImagesCount').innerText = totalImages;
+      document.getElementById('statReadTime').innerText = `${readMinutes} 分钟`;
+    }
+
+    // 生成目录树
+    function generateTableOfContents() {
+      const tocList = document.getElementById('tableOfContentsList');
+      tocList.innerHTML = '';
+
+      // 获取预览容器中所有的 H1, H2, H3
+      const headings = previewEl.querySelectorAll('h1, h2, h3');
+      
+      if (headings.length === 0) {
+        tocList.innerHTML = '<li class="toc-item" style="color: var(--text-tertiary); font-size:12px;">无标题章节</li>';
+        return;
+      }
+
+      headings.forEach((heading, idx) => {
+        // 给标题元素注入唯一 ID 用于定位跳转
+        const headingId = `heading-anchor-${idx}`;
+        heading.id = headingId;
+
+        const level = parseInt(heading.tagName.substring(1));
+        const item = document.createElement('li');
+        item.className = `toc-item toc-indent-${level}`;
+        
+        const link = document.createElement('a');
+        link.href = `#${headingId}`;
+        link.innerText = heading.innerText;
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        item.appendChild(link);
+        tocList.appendChild(item);
       });
     }
 
-    function copyMarkdown() {
-      var btn = event.target;
-      copyToClipboard(markdownContent, btn);
+    // 布局模式切换
+    function changeLayout(mode) {
+      const btns = {
+        'edit-only': document.getElementById('layoutBtnEdit'),
+        'split-screen': document.getElementById('layoutBtnSplit'),
+        'preview-only': document.getElementById('layoutBtnPreview')
+      };
+
+      // 切换 class
+      mainContainer.className = `main-container layout-${mode}`;
+
+      // 切换按钮高亮
+      Object.keys(btns).forEach(key => {
+        if (key === mode) {
+          btns[key].classList.add('active');
+        } else {
+          btns[key].classList.remove('active');
+        }
+      });
     }
 
-    function copyCurrentUrl() {
-      var btn = event.target;
-      copyToClipboard(window.location.href, btn);
-    }
+    // 切换锁定状态
+    function toggleEditLock() {
+      isEditingLocked = !isEditingLocked;
+      const indicator = document.getElementById('editorLockStateIndicator');
+      const lockIcon = document.getElementById('lockIcon');
 
-    function copyDownloadUrl() {
-      var btn = event.target;
-      var url = new URL(window.location.href);
-      url.searchParams.set('download', 'true');
-      copyToClipboard(url.toString(), btn);
-    }
-
-    function copyPlainUrl() {
-      var btn = event.target;
-      var url = window.location.href.replace('/html/', '/');
-      copyToClipboard(url, btn);
-    }
-
-    // 打开功能
-    function openMarkdownAsText() {
-      var blob = new Blob([markdownContent], { type: 'text/plain; charset=utf-8' });
-      var url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
-    }
-
-    function openCurrentUrl() {
-      window.open(window.location.href, '_blank');
-    }
-
-    function openDownloadUrl() {
-      var url = new URL(window.location.href);
-      url.searchParams.set('download', 'true');
-      window.location.href = url.toString();
-    }
-
-    function openPlainUrl() {
-      var url = window.location.href.replace('/html/', '/');
-      window.open(url, '_blank');
-    }
-
-    // 切换编辑/只读模式
-    function toggleEdit() {
-      isEditing = !isEditing;
-
-      if (isEditing) {
-        editorEl.removeAttribute('readonly');
-        editorEl.focus();
-        editBtn.textContent = '🔒 锁定';
-        editBtn.classList.remove('active');
-        editBtn.title = '锁定编辑器（只读模式）';
-      } else {
+      if (isEditingLocked) {
         editorEl.setAttribute('readonly', 'readonly');
-        editBtn.textContent = '🔓 解锁';
-        editBtn.classList.add('active');
-        editBtn.title = '解锁编辑器（可编辑模式）';
+        editLockBtn.classList.add('lock-active');
+        editLockBtn.innerHTML = `<i data-lucide="unlock" style="width: 14px; height: 14px;"></i> <span>解锁</span>`;
+        indicator.innerText = '锁定只读';
+        indicator.style.color = '#ef4444';
+      } else {
+        editorEl.removeAttribute('readonly');
+        editLockBtn.classList.remove('lock-active');
+        editLockBtn.innerHTML = `<i data-lucide="lock" style="width: 14px; height: 14px;"></i> <span>锁定</span>`;
+        indicator.innerText = '可编辑';
+        indicator.style.color = 'var(--text-tertiary)';
+        editorEl.focus();
       }
+      lucide.createIcons();
     }
 
-    // 重置为原始内容
-    function resetContent() {
-      if (confirm('确定要重置为原始内容吗？当前的编辑将会丢失。')) {
+    // 重置内容
+    function resetToOriginalContent() {
+      if (confirm('确定要重置为初始转换的内容吗？您当前的编辑内容将会全部丢失。')) {
         editorEl.value = originalMarkdownContent;
         markdownContent = originalMarkdownContent;
-        renderPreview(markdownContent);
+        renderMarkdownPreview(markdownContent);
       }
+    }
+
+    // 复制 Markdown 功能
+    function copyMarkdownContent(btn) {
+      navigator.clipboard.writeText(markdownContent).then(() => {
+        const originalHtml = btn.innerHTML;
+        btn.className = 'btn-action success';
+        btn.innerHTML = `<i data-lucide="check" style="width: 14px; height: 14px;"></i> <span>已复制!</span>`;
+        lucide.createIcons();
+        setTimeout(() => {
+          btn.className = 'btn-action';
+          btn.innerHTML = originalHtml;
+          lucide.createIcons();
+        }, 2000);
+      }).catch(err => {
+        alert('复制失败，请手动选择复制。');
+      });
+    }
+
+    // 下载 Markdown 文件
+    function downloadMarkdownFile(btn) {
+      const blob = new Blob([markdownContent], { type: 'text/markdown; charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      // 从标题提取用于重命名文件名
+      const titleEl = document.querySelector('header h1');
+      const filename = (titleEl ? titleEl.title : 'article') + '.md';
+      link.download = filename;
+      link.click();
+
+      URL.revokeObjectURL(url);
     }
   </script>
 </body>
