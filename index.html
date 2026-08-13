@@ -14,7 +14,7 @@
   <!-- Marked.js (Markdown 解析) & Highlight.js (代码高亮) -->
   <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css" id="hljs-theme">
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
   
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -1159,20 +1159,39 @@
         if (e.key === 'Enter') handleConvert();
       });
 
-      // Synchronize text highlight
-      marked.setOptions({
-        highlight: function(code, lang) {
-          if (lang && hljs.getLanguage(lang)) {
-            try {
-              return hljs.highlight(code, { language: lang }).value;
-            } catch (err) {}
-          }
-          return hljs.highlightAuto(code).value;
-        },
+      configureMarkdownRenderer();
+    });
+
+    // 配置 Markdown 渲染。代码高亮是可选增强，CDN 不可用时仍应正常展示转换结果。
+    function configureMarkdownRenderer() {
+      const options = {
         breaks: true,
         gfm: true
+      };
+      const highlighter = window.hljs;
+
+      if (highlighter) {
+        options.highlight = function(code, lang) {
+          if (lang && highlighter.getLanguage(lang)) {
+            try {
+              return highlighter.highlight(code, { language: lang }).value;
+            } catch (err) {}
+          }
+          return highlighter.highlightAuto(code).value;
+        };
+      }
+
+      marked.setOptions(options);
+    }
+
+    function highlightCodeBlocks(container) {
+      const highlighter = window.hljs;
+      if (!highlighter) return;
+
+      container.querySelectorAll('pre code').forEach((block) => {
+        highlighter.highlightElement(block);
       });
-    });
+    }
 
     // Theme Management
     function initTheme() {
@@ -1304,9 +1323,7 @@
         document.getElementById('renderedPreviewContent').innerHTML = marked.parse(cleanMarkdown);
         
         // Run code highlighting
-        document.querySelectorAll('#renderedPreviewContent pre code').forEach((block) => {
-          hljs.highlightElement(block);
-        });
+        highlightCodeBlocks(document.getElementById('renderedPreviewContent'));
 
         // Generate custom shareable links in Sandbox
         generateSandboxLinks(isWechat, isWechat ? articleId : targetUrl);

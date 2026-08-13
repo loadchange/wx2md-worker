@@ -128,4 +128,30 @@ describe('WX2MD Worker Test Suite', () => {
 		expect(html).toContain('<!DOCTYPE html>');
 		expect(html).toContain('渲染预览'); // preview.html content
 	});
+
+	it('加载 Highlight.js 浏览器构建，并在依赖不可用时安全降级', async () => {
+		const homepageContext = createExecutionContext();
+		const homepageResponse = await worker.fetch(new Request('http://example.com/'), env, homepageContext);
+		await waitOnExecutionContext(homepageContext);
+
+		const previewContext = createExecutionContext();
+		const previewResponse = await worker.fetch(
+			new Request('http://example.com/html/s/highlight-fallback-test?nocache=1'),
+			env,
+			previewContext
+		);
+		await waitOnExecutionContext(previewContext);
+
+		const pages = [await homepageResponse.text(), await previewResponse.text()];
+		for (const html of pages) {
+			expect(html).toContain(
+				'https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js'
+			);
+			expect(html).not.toContain(
+				'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js'
+			);
+			expect(html).toContain('const highlighter = window.hljs;');
+			expect(html).toContain('if (!highlighter) return;');
+		}
+	});
 });
