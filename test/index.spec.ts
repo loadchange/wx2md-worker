@@ -150,8 +150,9 @@ describe('WX2MD Worker Test Suite', () => {
 			expect(html).not.toContain(
 				'https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js'
 			);
-			expect(html).toContain('const highlighter = window.hljs;');
-			expect(html).toContain('if (!highlighter) return;');
+			expect(html).toMatch(/const\s+highlighter\s*=\s*window\.hljs\s*;/);
+			expect(html).toMatch(/if\s*\(\s*!highlighter\s*\)\s*return\s*;/);
+			expect(html).not.toMatch(/(?:^|[^\w$.])hljs\s*\./m);
 		}
 	});
 });
