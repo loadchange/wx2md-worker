@@ -3,7 +3,8 @@
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
-		"deploy": "wrangler deploy",
+		"deploy": "npm run r2:lifecycle && wrangler deploy",
+		"r2:lifecycle": "wrangler r2 bucket lifecycle set wx2md-images --file r2-lifecycle.json --force",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"test": "vitest",

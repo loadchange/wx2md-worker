@@ -70,8 +70,23 @@ index.ts → converter.ts → utils.ts
 - 白名单：只处理 `qpic.cn` 域名，非白名单域名保留原链接
 - 确定性路径：URL → R2 路径映射（`generateR2PathFromUrl()`），避免重复上传
 - `replaceImageUrlsSync()` - 同步替换 Markdown 中的图片链接为 R2 链接
-- `uploadImagesToR2Async()` - 异步并发上传（限制并发数 5），设置 8 小时过期元数据
+- `uploadImagesToR2Async()` - 异步并发上传（限制并发数 5）
 - `downloadWechatImage()` - 使用微信 Referer 绕过防盗链下载图片
+
+**图片过期由 R2 lifecycle 规则控制，不由代码控制。** 规则声明在仓库根目录的
+`r2-lifecycle.json`（当前 `maxAge: 86400`，即 1 天后删除），由 `npm run deploy` 的
+`r2:lifecycle` 前置步骤自动应用到桶 `wx2md-images`，用于把存储压在 R2 免费额度（10 GB/月）内。
+
+改保留期：改 `r2-lifecycle.json` 的 `maxAge`（秒，最小 86400），然后 `npm run deploy`
+或单独 `npm run r2:lifecycle`。
+
+两个容易踩的坑：
+
+1. `put()` 里写的 `customMetadata.expiresAt` 只是记录字符串，**R2 不会据此删除任何对象**。
+   早期误以为它能生效、又没配 lifecycle，导致本应活 8 小时的图片累积到 105 万个 / 351 GB。
+2. `wrangler.jsonc` 的 `r2_buckets` **无法声明 lifecycle**（只支持 `binding` / `bucket_name` /
+   `jurisdiction` / `preview_bucket_name` / `remote`），所以规则必须走单独的 JSON 文件 +
+   npm script。绕过 `npm run deploy` 直接 `npx wrangler deploy` 不会应用规则。
 
 #### 7. `src/utils.ts` - 工具函数
 

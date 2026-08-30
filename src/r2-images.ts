@@ -2,7 +2,10 @@
  * R2 图片存储模块
  * 1. 白名单机制：只处理 qpic.cn 域名
  * 2. 确定性路径：基于URL生成唯一路径，避免重复上传
- * 3. 8小时过期：自动删除旧图片
+ * 3. 过期清理：由 R2 lifecycle 规则执行，声明在仓库根目录的 r2-lifecycle.json，
+ *    经 `npm run deploy`（前置步骤 r2:lifecycle）应用到桶上。
+ *    注意：下面 put() 里写的 customMetadata.expiresAt 只是记录用的字符串，
+ *    R2 不会据此删除任何对象——过期只认 lifecycle 规则。
  * 4. 异步上传：快速响应，后台处理
  */
 
@@ -219,7 +222,7 @@ export async function uploadImagesToR2Async(html: string, markdown: string, env:
 						return { success: false, skipped: false };
 					}
 
-					// 上传到R2（设置8小时后过期）
+					// 上传到R2。expiresAt 仅作记录，实际删除由 lifecycle 规则 expire-images-1d 执行
 					console.log(`上传到R2: ${r2Key}`);
 					const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000);
 

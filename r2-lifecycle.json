@@ -1,0 +1,20 @@
+{
+  "rules": [
+    {
+      "id": "expire-images-1d",
+      "enabled": true,
+      "conditions": { "prefix": "" },
+      "deleteObjectsTransition": {
+        "condition": { "maxAge": 86400, "type": "Age" }
+      }
+    },
+    {
+      "id": "Default Multipart Abort Rule",
+      "enabled": true,
+      "conditions": { "prefix": "" },
+      "abortMultipartUploadsTransition": {
+        "condition": { "maxAge": 604800, "type": "Age" }
+      }
+    }
+  ]
+}
